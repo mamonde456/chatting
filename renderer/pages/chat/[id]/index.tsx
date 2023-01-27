@@ -1,7 +1,19 @@
 import { onAuthStateChanged } from "firebase/auth";
-import { collection, doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import {
+  addDoc,
+  arrayUnion,
+  collection,
+  doc,
+  getDoc,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { useRouter } from "next/router";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { auth, db } from "../../../../firebase";
 
 export default function ChattingRoom() {
@@ -9,36 +21,75 @@ export default function ChattingRoom() {
     email: "",
     id: "",
   });
+  const [message, setMessage] = useState("");
+  const [messages, setMessages] = useState([]);
   const router = useRouter();
   const { id } = router.query;
-  const userEnter = async ({ email, uid }) => {
-    // const roomUpdateRef = doc(db, "room", id);
-    // await updateDoc(roomUpdateRef, { enterUser: [{ name: email, id: uid }] });
+  const enterUsers = async () => {
+    try {
+      const docRef = doc(db, "rooms", `${id}`);
+      await updateDoc(docRef, {
+        enterUsers: arrayUnion(user),
+      });
+    } catch (error) {
+      console.log("채팅방을 찾을 수 없습니다.");
+    }
   };
+
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
       setUser({ email: user.email, id: user.uid });
     });
+    enterUsers();
+  }, [user]);
+
+  useEffect(() => {
+    const newMessageQuery = query(collection(db, `room-${id}`));
+    onSnapshot(newMessageQuery, (snapshot) => {
+      snapshot.forEach((doc) => {
+        setMessages((prev: any) => [doc.data(), ...prev]);
+      });
+    });
   }, []);
 
-  const onClick = async () => {
-    const docRef = doc(db, "rooms", `${id}`);
-    const docSnap = await getDoc(docRef);
-    console.log(docSnap.data());
-    const enterPrevUser = docSnap.data().enterUsers;
+  const onChange = (e: React.FormEvent<HTMLInputElement>) => {
+    const {
+      currentTarget: { value },
+    } = e;
+    setMessage(value);
+  };
+  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (message === "") return;
+    console.log(message);
+    const messageRef = await addDoc(collection(db, `room-${id}`), {
+      message,
+      owner: { name: user.email, id: user.id },
+      createdAt: Date.now(),
+    });
+    console.log(messageRef.id);
     await setDoc(
-      doc(db, "rooms", `${id}`),
+      doc(db, "rooms", messageRef.id),
       {
-        enterUsers: [...enterPrevUser, user],
+        id: messageRef.id,
       },
       { merge: true }
     );
+    setMessage("");
   };
+
   return (
     <div>
-      hello 2<button onClick={onClick}>click</button>
-      <form>
-        <input type="text" name="text" />
+      <div>
+        {messages?.map((el) => (
+          <p key={el.id}>
+            <span>{el.owner.name}</span>
+            <span>{el.message}</span>
+          </p>
+        ))}
+      </div>
+      <form onSubmit={onSubmit}>
+        <input type="text" name="message" onChange={onChange} value={message} />
         <input type="submit" value="send" />
       </form>
     </div>
