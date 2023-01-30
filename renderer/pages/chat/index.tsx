@@ -15,7 +15,7 @@ import { auth, db } from "../../../firebase";
 
 export default function chat() {
   const [room, setRoom] = useState("");
-  const [rooms, setRooms] = useState([]) as any;
+  const [rooms, setRooms] = useState([]);
   const [roomId, setRoomId] = useState("");
   const [user, setUser] = useState({
     email: "",
@@ -23,13 +23,17 @@ export default function chat() {
   });
 
   useEffect(() => {
-    const roomQuery = query(collection(db, "rooms"));
-    onSnapshot(roomQuery, (snapshot) => {
-      snapshot.forEach((doc) => {
-        setRooms((prev: any) => [doc.data(), ...prev]);
+    try {
+      setRooms([]);
+      const roomQuery = query(collection(db, "rooms"));
+      return onSnapshot(roomQuery, (snapshot) => {
+        snapshot.forEach((doc) => {
+          setRooms((prev) => [doc.data(), ...prev]);
+        });
       });
-    });
-    console.log(rooms);
+    } catch (error) {
+      console.log(error);
+    }
   }, []);
 
   useEffect(() => {
@@ -49,8 +53,9 @@ export default function chat() {
     setRoom(value);
   };
 
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLButtonElement>) => {
     e.preventDefault();
+
     try {
       const docRef = await addDoc(collection(db, "rooms"), {
         roomName: room,
@@ -73,16 +78,22 @@ export default function chat() {
 
   return (
     <div>
-      <form onSubmit={onSubmit}>
+      <form>
         <input type="text" name="room" onChange={onChange} value={room} />
-        <input type="submit" value="Create Chatting Room" />
+        <button type="submit" onClick={onSubmit}>
+          Create Chatting Room
+        </button>
       </form>
       <div>
-        {rooms?.map((el) => (
-          <Link href={`chat/${el.id}`} key={el.roomName}>
-            {el.roomName}
-          </Link>
-        ))}
+        {rooms ? (
+          rooms?.map((el) => (
+            <Link href={`chat/${el.id}`} key={el.id}>
+              {el.roomName}
+            </Link>
+          ))
+        ) : (
+          <p>개설된 채팅방이 없습니다.</p>
+        )}
       </div>
     </div>
   );
