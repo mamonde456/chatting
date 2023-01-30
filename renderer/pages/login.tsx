@@ -27,8 +27,7 @@ export default function login() {
     e.preventDefault();
     setPersistence(auth, browserSessionPersistence)
       .then(() => {
-        signInWithEmailAndPassword(auth, user.email, user.password);
-        return router.push("/");
+        return signInWithEmailAndPassword(auth, user.email, user.password);
       })
       .catch((error) => {
         const errorMessage = error.message;
@@ -37,6 +36,7 @@ export default function login() {
         }
         console.log(error);
       });
+    router.push("/");
   };
   return (
     <>
