@@ -26,6 +26,7 @@ export default function ChattingRoom() {
   const router = useRouter();
   const { id } = router.query;
   const enterUsers = async () => {
+    if (!id) return;
     try {
       const docRef = doc(db, "rooms", `${id}`);
       await updateDoc(docRef, {
@@ -41,15 +42,26 @@ export default function ChattingRoom() {
       setUser({ email: user.email, id: user.uid });
     });
     enterUsers();
-  }, [user]);
+  }, []);
 
   useEffect(() => {
-    const newMessageQuery = query(collection(db, `room-${id}`));
-    onSnapshot(newMessageQuery, (snapshot) => {
+    const newMessageQuery = query(
+      collection(db, `room-${id}`),
+      orderBy("createdAt")
+    );
+    // const unsubscribe = onSnapshot(collection(db, `room-${id}`), (snapshot) => {
+    //   snapshot.forEach((doc) => {
+    //     console.log(doc.data());
+    //     setMessages((prev) => [doc.data(), ...prev]);
+    //   });
+    // });
+    return onSnapshot(newMessageQuery, (snapshot) => {
+      setMessages([]);
       snapshot.forEach((doc) => {
-        setMessages((prev: any) => [doc.data(), ...prev]);
+        setMessages((prev) => [...prev, doc.data()]);
       });
     });
+    // return unsubscribe();
   }, []);
 
   const onChange = (e: React.FormEvent<HTMLInputElement>) => {
@@ -58,39 +70,44 @@ export default function ChattingRoom() {
     } = e;
     setMessage(value);
   };
-  const onSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = async (e: React.FormEvent<HTMLButtonElement>) => {
     e.preventDefault();
     if (message === "") return;
-    console.log(message);
-    const messageRef = await addDoc(collection(db, `room-${id}`), {
-      message,
-      owner: { name: user.email, id: user.id },
-      createdAt: Date.now(),
-    });
-    console.log(messageRef.id);
-    await setDoc(
-      doc(db, "rooms", messageRef.id),
-      {
-        id: messageRef.id,
-      },
-      { merge: true }
-    );
-    setMessage("");
+    try {
+      const messageRef = await addDoc(collection(db, `room-${id}`), {
+        message,
+        owner: { name: user.email, id: user.id },
+        createdAt: Date(),
+      });
+      await setDoc(
+        doc(db, `room-${id}`, messageRef.id),
+        {
+          id: messageRef.id,
+        },
+        { merge: true }
+      );
+      setMessage("");
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   return (
     <div>
       <div>
         {messages?.map((el) => (
-          <p key={el.id}>
-            <span>{el.owner.name}</span>
+          <div key={el.id}>
+            <span>{el.owner.name.split("@")[0]}</span>
             <span>{el.message}</span>
-          </p>
+          </div>
         ))}
       </div>
-      <form onSubmit={onSubmit}>
+
+      <form>
         <input type="text" name="message" onChange={onChange} value={message} />
-        <input type="submit" value="send" />
+        <button type="submit" onClick={onSubmit}>
+          send
+        </button>
       </form>
     </div>
   );
