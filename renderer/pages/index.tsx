@@ -48,7 +48,9 @@ function Home() {
       <ListBox>
         <List>
           {listArray.map((item) => (
-            <li onClick={() => setId(() => item.id)}>{item.list}</li>
+            <li key={item.id} onClick={() => setId(() => item.id)}>
+              {item.list}
+            </li>
           ))}
         </List>
       </ListBox>
