@@ -1,4 +1,13 @@
-import { addDoc, collection, doc, getDocs, setDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDocs,
+  onSnapshot,
+  query,
+  setDoc,
+  where,
+} from "firebase/firestore";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
@@ -101,10 +110,20 @@ export default function UserList({ title, isOpen, isOpenFn }: IUserListProps) {
   const router = useRouter();
 
   const getUserList = async () => {
-    const querySnapshot = await getDocs(collection(db, "users"));
-    querySnapshot.forEach((doc) => {
-      setUsers((prev) => [doc.data(), ...prev]);
-    });
+    try {
+      setUsers([]);
+      const roomQuery = query(
+        collection(db, "users"),
+        where("id", "!=", `${user.id}`)
+      );
+      return onSnapshot(roomQuery, (snapshot) => {
+        snapshot.forEach((doc) => {
+          setUsers((prev) => [doc.data(), ...prev]);
+        });
+      });
+    } catch (error) {
+      console.log(error);
+    }
   };
   useEffect(() => {
     clickUsers.length !== 0 ? setIsActive(true) : setIsActive(false);
@@ -135,7 +154,7 @@ export default function UserList({ title, isOpen, isOpenFn }: IUserListProps) {
     try {
       await setDoc(doc(db, `rooms`, `${user.id}`), {
         owner: user,
-        enterUsers: [user, other],
+        enterUsers: [{ ...user, createdAt: Date.now() }, other],
         createdAt: Date(),
         id: user.id,
         roomName: other.name,
@@ -192,22 +211,7 @@ export default function UserList({ title, isOpen, isOpenFn }: IUserListProps) {
   return (
     <Wrapper>
       <Title>{title ? title : "유저 목록"}</Title>
-      {title && (
-        <ClickUserList>
-          {clickUsers.map((user) => (
-            <li key={user.id}>
-              <span>{user.name}</span>
-              <XIcon
-                onClick={() => userRemove(user)}
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 320 512"
-              >
-                <path d="M310.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L160 210.7 54.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L114.7 256 9.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L160 301.3 265.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L205.3 256 310.6 150.6z" />
-              </XIcon>
-            </li>
-          ))}
-        </ClickUserList>
-      )}
+
       <hr />
       <Users>
         {users?.map((user) => (
@@ -221,26 +225,6 @@ export default function UserList({ title, isOpen, isOpenFn }: IUserListProps) {
           </li>
         ))}
       </Users>
-      {title && (
-        <BtnBox>
-          <button
-            className={isActive ? "btn enter acitve" : "btn enter"}
-            disabled={!isActive}
-            onClick={createdRoom}
-          >
-            확인
-          </button>
-          <button
-            className="btn cancle"
-            onClick={() => {
-              isOpenFn((prev) => !prev);
-              setClickUsers([]);
-            }}
-          >
-            취소
-          </button>
-        </BtnBox>
-      )}
     </Wrapper>
   );
 }
