@@ -11,6 +11,7 @@ const Wrapper = styled.div`
   display: flex;
 `;
 const ListBox = styled.div`
+  padding-top: 50px;
   width: 100px;
   height: 100vh;
   background-color: #d8deeb;
@@ -28,9 +29,27 @@ const List = styled.ul`
     /* border: solid 1px black; */
   }
 `;
+const Components = styled.div`
+  padding-top: 50px;
+`;
 
+const LoginText = styled.p`
+  padding: 10px;
+`;
 function Home() {
   const [id, setId] = useState(0);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  useEffect(() => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) return;
+    if (currentUser) {
+      setIsLoggedIn((prev) => !prev);
+    } else {
+      setIsLoggedIn((prev) => !prev);
+      console.log("로그인한 유저가 없음");
+    }
+  }, []);
+
   const listArray = [
     {
       id: 0,
@@ -54,7 +73,13 @@ function Home() {
           ))}
         </List>
       </ListBox>
-      <div>{listArray[id].component}</div>
+      <Components>
+        {isLoggedIn ? (
+          <>{listArray[id].component}</>
+        ) : (
+          <LoginText>로그인을 해주세요</LoginText>
+        )}
+      </Components>
     </Wrapper>
   );
 }
