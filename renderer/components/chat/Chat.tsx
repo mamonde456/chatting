@@ -9,6 +9,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { db } from "../../../firebase";
+import { IChatProps } from "../../types/chat";
 
 const TextBox = styled.div`
   display: flex;
@@ -18,7 +19,7 @@ const TextBox = styled.div`
     color: rgba(0, 0, 0, 0.5);
   }
 `;
-export default function Chat({ roomName, roomId }: any) {
+export default function Chat({ roomName, roomId, roomIdFn }: IChatProps) {
   const [messages, setMessages] = useState([]);
   const router = useRouter();
   const getMessages = () => {
@@ -42,7 +43,7 @@ export default function Chat({ roomName, roomId }: any) {
   }, []);
 
   return (
-    <li onClick={() => router.push(`chat/${roomId}`)}>
+    <li onClick={() => roomIdFn(roomId)}>
       <div className="avatar"></div>
       <TextBox>
         <span>{roomName}</span>
