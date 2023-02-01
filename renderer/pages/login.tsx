@@ -8,6 +8,33 @@ import {
 import { auth } from "../../firebase.js";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import styled from "styled-components";
+
+const Form = styled.form`
+  padding: 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  hr {
+    width: 150px;
+  }
+  div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 5px;
+    margin-bottom: 10px;
+  }
+  input {
+    width: 150px;
+    border-radius: 5px;
+  }
+  a {
+    font-size: 14px;
+  }
+`;
 
 export default function login() {
   const [user, setUser] = useState({
@@ -29,25 +56,42 @@ export default function login() {
       .then(() => {
         return signInWithEmailAndPassword(auth, user.email, user.password);
       })
+      .then(() => {
+        router.push("/");
+      })
       .catch((error) => {
         const errorMessage = error.message;
         if (errorMessage.includes("user-not-found")) {
-          console.log("없는 이메일");
-        }
-        console.log(error);
+          window.confirm("이메일을 찾을 수 없습니다.");
+        } else if (errorMessage.includes("wrong-password"))
+          window.confirm("비밀번호가 맞지 않습니다.");
       });
-    router.push("/");
   };
   return (
     <>
-      <form onSubmit={onSubmit}>
-        <input type="text" name="email" onInput={onChange} value={user.email} />
-        <input
-          type="text"
-          name="password"
-          onInput={onChange}
-          value={user.password}
-        />
+      <Form onSubmit={onSubmit}>
+        <div>
+          <label htmlFor="email">Email</label>
+          <input
+            required
+            type="text"
+            id="email"
+            name="email"
+            onChange={onChange}
+            value={user.email}
+          />
+        </div>
+        <div>
+          <label htmlFor="password">Password</label>
+          <input
+            required
+            type="text"
+            id="password"
+            name="password"
+            onChange={onChange}
+            value={user.password}
+          />
+        </div>
         <input
           type="submit"
           value="login"
@@ -57,10 +101,9 @@ export default function login() {
               : true
           }
         />
+        <hr />
         <Link href="/sign-up">Sign Up</Link>
-      </form>
-      <button>구글 로그인</button>
-      <button>깃허브 로그인</button>
+      </Form>
     </>
   );
 }
