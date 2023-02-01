@@ -1,7 +1,25 @@
 import { onAuthStateChanged, signOut } from "firebase/auth";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import styled from "styled-components";
 import { auth } from "../../firebase";
+
+const Header = styled.header`
+  width: 100%;
+  height: 50px;
+  padding: 10px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: white;
+  border-bottom: solid 1px rgba(0, 0, 0, 0.3);
+  nav {
+    display: flex;
+    gap: 30px;
+    justify-content: center;
+    align-items: center;
+  }
+`;
 
 export default function NavBar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -29,18 +47,19 @@ export default function NavBar() {
       });
   };
   return (
-    <>
-      <Link href="/">home</Link>
-      {isLoggedIn ? (
-        <>
-          {" "}
-          <span onClick={onLogout}>logout</span>
-          <Link href="/chat">Chat room</Link>
-        </>
-      ) : (
-        <Link href="/login">login</Link>
-      )}
-      {isLoggedIn && <p>어서오세요. {email} 님</p>}
-    </>
+    <Header>
+      <nav>
+        <Link href="/">home</Link>
+        {isLoggedIn ? (
+          <>
+            {" "}
+            <span onClick={onLogout}>logout</span>
+            <Link href="/chat">Chat room</Link>
+          </>
+        ) : (
+          <Link href="/login">login</Link>
+        )}
+      </nav>
+    </Header>
   );
 }
