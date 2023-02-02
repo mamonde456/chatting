@@ -5,4 +5,5 @@ export interface IChatProps {
 }
 export interface ICreateChatUserProps {
   isOpenFn: (boolean) => void;
+  setRoomId: (string) => void;
 }
