@@ -4,6 +4,7 @@ import {
   doc,
   getDocs,
   onSnapshot,
+  orderBy,
   query,
   setDoc,
   where,
@@ -12,6 +13,8 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { auth, db } from "../../../firebase";
+import useUser from "../../hook/useUser";
+import { IListProps, IMenuProps } from "../../types/common";
 import { IUserListProps } from "../../types/user/userList";
 
 const Wrapper = styled.div`
@@ -30,25 +33,39 @@ const Title = styled.h3`
 `;
 
 const Users = styled.ul`
-  max-height: 400px;
-  overflow-y: scroll;
+  /* max-height: 400px; */
+  /* overflow-y: scroll; */
   display: flex;
   flex-direction: column;
   gap: 10px;
-  li {
-    padding: 10px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    &:hover {
-      background-color: rgba(137, 137, 137, 0.2);
+  .currentUser {
+    position: relative;
+    margin-bottom: 30px;
+    &::after {
+      content: "";
+      position: absolute;
+      bottom: -10px;
+      padding: 10px;
+      width: 90%;
+      border-bottom: solid 1px rgba(0, 0, 0, 0.2);
     }
-    .avatar {
-      width: 50px;
-      height: 50px;
-      background-color: black;
-      border-radius: 10px;
-    }
+  }
+`;
+
+const User = styled.li`
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  &:hover {
+    background-color: rgba(137, 137, 137, 0.2);
+  }
+
+  .avatar {
+    width: 50px;
+    height: 50px;
+    background-color: black;
+    border-radius: 10px;
   }
 `;
 
@@ -98,27 +115,22 @@ const BtnBox = styled.div`
   }
 `;
 
-export default function UserList({ title, isOpen, isOpenFn }: IUserListProps) {
-  const [user, setUser] = useState({
-    name: "",
-    email: "",
-    id: "",
-  });
+export default function UserList({ setId, setRoomId }: IListProps) {
+  const [name, setName] = useState("");
   const [users, setUsers] = useState([]);
-  const [clickUsers, setClickUsers] = useState([]);
-  const [isActive, setIsActive] = useState(false);
-  const router = useRouter();
+  const currentUser = useUser();
 
   const getUserList = async () => {
     try {
       setUsers([]);
-      const roomQuery = query(
-        collection(db, "users"),
-        where("id", "!=", `${user.id}`)
-      );
+      const roomQuery = query(collection(db, "users"), orderBy("name"));
       return onSnapshot(roomQuery, (snapshot) => {
         snapshot.forEach((doc) => {
-          setUsers((prev) => [doc.data(), ...prev]);
+          if (doc.data().id === currentUser.uid) {
+            setName(doc.data().name);
+          } else {
+            setUsers((prev) => [doc.data(), ...prev]);
+          }
         });
       });
     } catch (error) {
@@ -126,103 +138,48 @@ export default function UserList({ title, isOpen, isOpenFn }: IUserListProps) {
     }
   };
   useEffect(() => {
-    clickUsers.length !== 0 ? setIsActive(true) : setIsActive(false);
-  }, [clickUsers]);
-  useEffect(() => {
-    setUsers([]);
     getUserList();
-    const currentUser = auth.currentUser;
-    if (!currentUser) return;
-    const userFilter = users.filter(
-      (item) => item.email === currentUser?.email
-    );
-    const userName = userFilter[0]?.name || currentUser?.email.split("@")[0];
-    if (currentUser) {
-      console.log(currentUser);
-      setUser({
-        email: currentUser.email,
-        name: userName,
-        id: currentUser.uid,
-      });
-    } else {
-      console.log("로그인한 유저가 없음");
-    }
   }, []);
 
-  const onDbClick = async (other: any) => {
-    if (title) return;
+  const onClick = async (user) => {
     try {
-      await setDoc(doc(db, `rooms`, `${user.id}`), {
+      await setDoc(doc(db, `rooms`, `${currentUser.uid}`), {
         owner: user,
-        enterUsers: [{ ...user, createdAt: Date.now() }, other],
+        enterUsers: [
+          {
+            name,
+            id: currentUser.uid,
+            email: currentUser.email,
+            createdAt: Date.now(),
+          },
+          user,
+        ],
         createdAt: Date(),
         id: user.id,
-        roomName: other.name,
+        roomName: user.name,
       });
-
-      router.push(`chat/${user.id}`);
+      setId(1);
+      setRoomId(user.id);
     } catch (e) {
       console.error(e);
     }
   };
 
-  const onClick = (user) => {
-    if (!title) return;
-
-    if (clickUsers.includes(user)) {
-      return userRemove(user);
-    }
-    setClickUsers((prev) => [user, ...prev]);
-  };
-
-  const userRemove = (user) => {
-    const userArray = clickUsers.filter((item) => item.id !== user.id);
-    setClickUsers(userArray);
-  };
-  const getUserName = () => {
-    let userArray = [];
-    for (let i = 0; i < clickUsers.length; i++) {
-      userArray = [...userArray, clickUsers[i].name];
-    }
-    return userArray.join(",");
-  };
-  const createdRoom = async () => {
-    try {
-      const roomName = getUserName();
-      const docRef = await addDoc(collection(db, "rooms"), {
-        roomName: roomName,
-        owner: { name: user.email, id: user.id },
-        enterUsers: [user, ...clickUsers],
-        createdAt: Date(),
-      });
-      await setDoc(
-        doc(db, "rooms", docRef.id),
-        {
-          id: docRef.id,
-        },
-        { merge: true }
-      );
-      setClickUsers([]);
-      router.push(`chat/${docRef.id}`);
-    } catch (e) {
-      console.error(e);
-    }
-  };
   return (
     <Wrapper>
-      <Title>{title ? title : "유저 목록"}</Title>
+      <Title>유저 목록</Title>
 
       <hr />
       <Users>
+        <User className="currentUser">
+          <div className="avatar"></div>
+          <div>{name}</div>
+        </User>
         {users?.map((user) => (
-          <li
-            key={user.id}
-            onClick={() => onClick(user)}
-            onDoubleClick={() => onDbClick(user)}
-          >
+          <User key={user.id} onClick={() => onClick(user)}>
             <div className="avatar"></div>
             <div>{user.name}</div>
-          </li>
+          </User>
         ))}
       </Users>
     </Wrapper>
