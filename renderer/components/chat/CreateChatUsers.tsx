@@ -12,6 +12,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { auth, db } from "../../../firebase";
+import useUser from "../../hook/useUser";
 import { ICreateChatUserProps } from "../../types/chat";
 import { IUserListProps } from "../../types/user/userList";
 
@@ -99,7 +100,10 @@ const BtnBox = styled.div`
   }
 `;
 
-export default function CreateChatUsers({ isOpenFn }: ICreateChatUserProps) {
+export default function CreateChatUsers({
+  isOpenFn,
+  setRoomId,
+}: ICreateChatUserProps) {
   const [user, setUser] = useState({
     name: "",
     email: "",
@@ -108,7 +112,7 @@ export default function CreateChatUsers({ isOpenFn }: ICreateChatUserProps) {
   const [users, setUsers] = useState([]);
   const [clickUsers, setClickUsers] = useState([]);
   const [isActive, setIsActive] = useState(false);
-  const router = useRouter();
+  const currentUser = useUser();
 
   const getUserList = async () => {
     try {
@@ -119,6 +123,13 @@ export default function CreateChatUsers({ isOpenFn }: ICreateChatUserProps) {
       );
       return onSnapshot(roomQuery, (snapshot) => {
         snapshot.forEach((doc) => {
+          if (doc.data().id === currentUser.uid) {
+            setUser({
+              name: doc.data().name,
+              email: doc.data().email,
+              id: doc.data().id,
+            });
+          }
           setUsers((prev) => [doc.data(), ...prev]);
         });
       });
@@ -130,41 +141,8 @@ export default function CreateChatUsers({ isOpenFn }: ICreateChatUserProps) {
     clickUsers.length !== 0 ? setIsActive(true) : setIsActive(false);
   }, [clickUsers]);
   useEffect(() => {
-    setUsers([]);
     getUserList();
-    const currentUser = auth.currentUser;
-    if (!currentUser) return;
-    const userFilter = users.filter(
-      (item) => item.email === currentUser?.email
-    );
-    const userName = userFilter[0]?.name || currentUser?.email.split("@")[0];
-    if (currentUser) {
-      console.log(currentUser);
-      setUser({
-        email: currentUser.email,
-        name: userName,
-        id: currentUser.uid,
-      });
-    } else {
-      console.log("로그인한 유저가 없음");
-    }
   }, []);
-
-  const onDbClick = async (other: any) => {
-    try {
-      await setDoc(doc(db, `rooms`, `${user.id}`), {
-        owner: user,
-        enterUsers: [{ ...user, createdAt: Date.now() }, other],
-        createdAt: Date(),
-        id: user.id,
-        roomName: other.name,
-      });
-
-      router.push(`chat/${user.id}`);
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const onClick = (user) => {
     if (clickUsers.includes(user)) {
@@ -179,18 +157,30 @@ export default function CreateChatUsers({ isOpenFn }: ICreateChatUserProps) {
   };
   const getUserName = () => {
     let userArray = [];
-    for (let i = 0; i < clickUsers.length; i++) {
-      userArray = [...userArray, clickUsers[i].name];
-    }
+    clickUsers.forEach((item) => {
+      userArray = [...userArray, item.name];
+    });
     return userArray.join(",");
   };
   const createdRoom = async () => {
     try {
+      if (clickUsers.length === 1) {
+        await setDoc(doc(db, `rooms`, `${user.id}`), {
+          owner: user,
+          enterUsers: [{ ...user, createdAt: Date.now() }, ...clickUsers],
+          createdAt: Date(),
+          id: user.id,
+          roomName: clickUsers[0].name,
+        });
+        setClickUsers([]);
+        setRoomId(user.id);
+        return isOpenFn((prev) => !prev);
+      }
       const roomName = getUserName();
       const docRef = await addDoc(collection(db, "rooms"), {
         roomName: roomName,
         owner: { name: user.email, id: user.id },
-        enterUsers: [user, ...clickUsers],
+        enterUsers: [{ ...user, createdAt: Date.now() }, ...clickUsers],
         createdAt: Date(),
       });
       await setDoc(
@@ -201,7 +191,8 @@ export default function CreateChatUsers({ isOpenFn }: ICreateChatUserProps) {
         { merge: true }
       );
       setClickUsers([]);
-      //   router.push(`chat/${docRef.id}`);
+      setRoomId(docRef.id);
+      return isOpenFn((prev) => !prev);
     } catch (e) {
       console.error(e);
     }
@@ -227,11 +218,7 @@ export default function CreateChatUsers({ isOpenFn }: ICreateChatUserProps) {
       <hr />
       <Users>
         {users?.map((user) => (
-          <li
-            key={user.id}
-            onClick={() => onClick(user)}
-            onDoubleClick={() => onDbClick(user)}
-          >
+          <li key={user.id} onClick={() => onClick(user)}>
             <div className="avatar"></div>
             <div>{user.name}</div>
           </li>
