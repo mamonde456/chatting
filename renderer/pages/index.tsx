@@ -5,31 +5,17 @@ import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { auth, db } from "../../firebase";
 import ChatList from "../components/chat/ChatList";
+import Menu from "../components/common/Menu";
 import UserList from "../components/user/UserList";
+import useUser from "../hook/useUser";
+import { listArray } from "../until/menu";
 
 const Wrapper = styled.div`
-  display: flex;
-`;
-const ListBox = styled.div`
-  padding-top: 50px;
-  width: 100px;
-  height: 100vh;
-  background-color: #d8deeb;
-`;
-
-const List = styled.ul`
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  li {
-    width: 100%;
-    padding: 10px;
-    /* border: solid 1px black; */
-  }
+  display: grid;
+  grid-template-columns: 100px 2fr;
 `;
 const Components = styled.div`
+  /* padding-left: 100px; */
   padding-top: 50px;
 `;
 
@@ -38,44 +24,25 @@ const LoginText = styled.p`
 `;
 function Home() {
   const [id, setId] = useState(0);
+  const [roomId, setRoomId] = useState("");
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const loggedIn = useUser();
   useEffect(() => {
-    const currentUser = auth.currentUser;
-    if (!currentUser) return;
-    if (currentUser) {
-      setIsLoggedIn((prev) => !prev);
-    } else {
-      setIsLoggedIn((prev) => !prev);
-      console.log("로그인한 유저가 없음");
-    }
+    setIsLoggedIn(loggedIn ? true : false);
   }, []);
 
-  const listArray = [
-    {
-      id: 0,
-      list: "유저 목록",
-      component: <UserList />,
-    },
-    {
-      id: 1,
-      list: "채팅방",
-      component: <ChatList />,
-    },
-  ];
   return (
     <Wrapper>
-      <ListBox>
-        <List>
-          {listArray.map((item) => (
-            <li key={item.id} onClick={() => setId(() => item.id)}>
-              {item.list}
-            </li>
-          ))}
-        </List>
-      </ListBox>
+      <Menu setId={setId} />
       <Components>
         {isLoggedIn ? (
-          <>{listArray[id].component}</>
+          <>
+            {id === 0 ? (
+              <UserList setId={setId} setRoomId={setRoomId} />
+            ) : (
+              <ChatList setRoomId={setRoomId} roomId={roomId} />
+            )}
+          </>
         ) : (
           <LoginText>로그인을 해주세요</LoginText>
         )}
