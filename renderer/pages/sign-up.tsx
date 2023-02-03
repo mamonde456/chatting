@@ -16,6 +16,11 @@ const Form = styled.form`
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  span {
+    font-size: 12px;
+    color: #9d1212;
+    margin-bottom: 10px;
+  }
   hr {
     width: 150px;
   }
@@ -41,7 +46,10 @@ export default function SignUp() {
     name: "",
     email: "",
     password: "",
+    confirmPassword: "",
   });
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const onChange = (e: React.FormEvent<HTMLInputElement>) => {
     const {
       currentTarget: { name, value },
@@ -52,9 +60,11 @@ export default function SignUp() {
 
   const onSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (user.password !== user.confirmPassword) {
+      return setErrorMsg("비밀번호가 같지 않습니다.");
+    }
     createUserWithEmailAndPassword(auth, user.email, user.password)
       .then(async (userCredential) => {
-        console.log(userCredential);
         await setDoc(doc(db, "users", userCredential.user.uid), {
           name: user.name,
           email: userCredential.user.email,
@@ -67,7 +77,7 @@ export default function SignUp() {
       .catch((error) => {
         const errorMessage = error.message;
         if (errorMessage.includes("email-already-in-use")) {
-          window.confirm(
+          setErrorMsg(
             "이미 존재하는 이메일입니다. 다른 이메일을 사용해주세요."
           );
         }
@@ -108,7 +118,18 @@ export default function SignUp() {
           value={user.password}
         />
       </div>
-
+      <div>
+        <label htmlFor="confirmPassword">Confirm Password</label>
+        <input
+          required
+          type="text"
+          id="confirmPassword"
+          name="confirmPassword"
+          onInput={onChange}
+          value={user.confirmPassword}
+        />
+      </div>
+      <span>{errorMsg}</span>
       <input
         type="submit"
         value="sign up"
