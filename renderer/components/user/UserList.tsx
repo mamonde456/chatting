@@ -13,12 +13,12 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import styled from "styled-components";
 import { auth, db } from "../../../firebase";
+import useResize from "../../hook/useResize";
 import useUser from "../../hook/useUser";
 import { IListProps, IMenuProps } from "../../types/common";
 import { IUserListProps } from "../../types/user/userList";
 
 const Wrapper = styled.div`
-  width: 400px;
   padding: 20px;
   hr {
     border: none;
@@ -32,19 +32,22 @@ const Title = styled.h3`
   padding: 10px 0px;
 `;
 
-const Users = styled.ul`
-  /* max-height: 400px; */
-  /* overflow-y: scroll; */
+const Users = styled.ul<{ height: number }>`
+  max-height: ${(props) => props.height - 200 + "px"};
+  overflow-y: auto;
+  padding-bottom: 10px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   .currentUser {
-    position: relative;
-    margin-bottom: 30px;
+    position: sticky;
+    top: 0;
+    background-color: white;
+    padding-bottom: 30px;
     &::after {
       content: "";
       position: absolute;
-      bottom: -10px;
+      bottom: 0px;
       padding: 10px;
       width: 90%;
       border-bottom: solid 1px rgba(0, 0, 0, 0.2);
@@ -119,7 +122,8 @@ export default function UserList({ setId, setRoomId }: IListProps) {
   const [name, setName] = useState("");
   const [users, setUsers] = useState([]);
   const currentUser = useUser();
-
+  const resize = useResize();
+  console.log(resize);
   const getUserList = async () => {
     try {
       setUsers([]);
@@ -143,7 +147,7 @@ export default function UserList({ setId, setRoomId }: IListProps) {
 
   const onClick = async (user) => {
     try {
-      await setDoc(doc(db, `rooms`, `${currentUser.uid}`), {
+      await setDoc(doc(db, `rooms`, `${user.id}`), {
         owner: user,
         enterUsers: [
           {
@@ -170,7 +174,7 @@ export default function UserList({ setId, setRoomId }: IListProps) {
       <Title>유저 목록</Title>
 
       <hr />
-      <Users>
+      <Users height={resize.height}>
         <User className="currentUser">
           <div className="avatar"></div>
           <div>{name}</div>
