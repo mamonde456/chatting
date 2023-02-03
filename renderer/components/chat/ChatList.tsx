@@ -5,7 +5,7 @@ import {
   query,
   where,
 } from "firebase/firestore";
-import { useEffect, useState } from "react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import styled from "styled-components";
 import { auth, db } from "../../../firebase";
 import useResize from "../../hook/useResize";
@@ -25,7 +25,7 @@ const Wrapper = styled.div`
 const ChatListWrap = styled.div`
   width: 100%;
   max-height: 800px;
-  overflow-y: scroll;
+  overflow-y: auto;
   position: relative;
 `;
 
@@ -88,6 +88,7 @@ export default function ChatList({ roomId, setRoomId }: IListProps) {
     id: "",
   });
   const [isOpen, setIsOpen] = useState(false);
+  const [isRemove, setIsRemove] = useState(false);
   useEffect(() => {
     const currentUser = auth.currentUser;
     if (!currentUser) return;
@@ -103,7 +104,7 @@ export default function ChatList({ roomId, setRoomId }: IListProps) {
     }
   }, []);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     try {
       setRooms([]);
       const roomQuery = query(collection(db, "rooms"));
@@ -115,7 +116,7 @@ export default function ChatList({ roomId, setRoomId }: IListProps) {
     } catch (error) {
       console.log(error);
     }
-  }, []);
+  }, [isRemove]);
   return (
     <Wrapper>
       <ChatListWrap>
@@ -135,7 +136,7 @@ export default function ChatList({ roomId, setRoomId }: IListProps) {
             </ChatIcon>
 
             <Chats>
-              {rooms ? (
+              {rooms.length > 0 ? (
                 rooms?.map((el) => (
                   <Chat
                     key={el.id}
@@ -145,14 +146,19 @@ export default function ChatList({ roomId, setRoomId }: IListProps) {
                   />
                 ))
               ) : (
-                <p>개설된 채팅방이 없습니다.</p>
+                <li>개설된 채팅방이 없습니다.</li>
               )}
             </Chats>
           </>
         )}
       </ChatListWrap>
       {roomId && (
-        <Chatting roomId={roomId} setRoomId={setRoomId} setRooms={setRooms} />
+        <Chatting
+          roomId={roomId}
+          setRooms={setRooms}
+          setRoomId={setRoomId}
+          setIsRemove={setIsRemove}
+        />
       )}
     </Wrapper>
   );
