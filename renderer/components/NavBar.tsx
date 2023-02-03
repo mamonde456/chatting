@@ -8,16 +8,15 @@ const Header = styled.header`
   width: 100%;
   height: 50px;
   padding: 10px;
-  position: fixed;
-  top: 0;
-  left: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
   background-color: white;
   border-bottom: solid 1px rgba(0, 0, 0, 0.3);
   nav {
     display: flex;
     gap: 30px;
-    justify-content: center;
-    align-items: center;
   }
 `;
 
@@ -54,7 +53,7 @@ export default function NavBar() {
           <>
             {" "}
             <span onClick={onLogout}>logout</span>
-            <Link href="/chat">Chat room</Link>
+            {/* <Link href="/chat">Chat room</Link> */}
           </>
         ) : (
           <Link href="/login">login</Link>
