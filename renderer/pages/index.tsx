@@ -24,7 +24,7 @@ const LoginText = styled.p`
 `;
 function Home() {
   const [id, setId] = useState(0);
-  const [roomId, setRoomId] = useState("");
+  const [roomId, setRoomId] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const loggedIn = useUser();
   useEffect(() => {
