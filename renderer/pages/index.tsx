@@ -7,16 +7,12 @@ import { auth, db } from "../../firebase";
 import ChatList from "../components/chat/ChatList";
 import Menu from "../components/common/Menu";
 import UserList from "../components/user/UserList";
+import useResize from "../hook/useResize";
 import useUser from "../hook/useUser";
-import { listArray } from "../until/menu";
 
 const Wrapper = styled.div`
   display: grid;
   grid-template-columns: 100px 2fr;
-`;
-const Components = styled.div`
-  /* padding-left: 100px; */
-  padding-top: 50px;
 `;
 
 const LoginText = styled.p`
@@ -26,15 +22,21 @@ function Home() {
   const [id, setId] = useState(0);
   const [roomId, setRoomId] = useState<string | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const loggedIn = useUser();
+  const { height } = useResize();
   useEffect(() => {
-    setIsLoggedIn(loggedIn ? true : false);
-  }, []);
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setIsLoggedIn(true);
+      } else {
+        setIsLoggedIn(false);
+      }
+    });
+  }, [auth]);
 
   return (
     <Wrapper>
-      <Menu setId={setId} />
-      <Components>
+      <Menu setId={setId} height={height} />
+      <div>
         {isLoggedIn ? (
           <>
             {id === 0 ? (
@@ -46,7 +48,7 @@ function Home() {
         ) : (
           <LoginText>로그인을 해주세요</LoginText>
         )}
-      </Components>
+      </div>
     </Wrapper>
   );
 }
