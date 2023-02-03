@@ -3,6 +3,7 @@ module.exports = {
     if (!isServer) {
       config.target = ["web", "es6"];
     }
+    config.output.globalObject = "this";
     return config;
   },
 };
