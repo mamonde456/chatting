@@ -128,11 +128,13 @@ export default function ChattingView({
       <MsgList ref={scrollRef}>
         {messages?.map((el) => (
           <Li key={el.createdAt} flex={el.owner.email === user.email}>
-            <span className="name">{user.name}</span>
+            <span className="name">
+              {el.owner.email === user.email ? user.name : el.owner.name}
+            </span>
             <MessageBox>
               <span
                 className={
-                  el.owner.name === user.email
+                  el.owner.email === user.email
                     ? "message meArrow"
                     : "message youArrow"
                 }
