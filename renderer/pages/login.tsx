@@ -16,6 +16,11 @@ const Form = styled.form`
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  span {
+    font-size: 12px;
+    color: #9d1212;
+    margin-bottom: 10px;
+  }
   hr {
     width: 150px;
   }
@@ -41,7 +46,7 @@ export default function login() {
     email: "",
     password: "",
   });
-  const [isDisabled, setIsDisabled] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const onChange = (e: React.FormEvent<HTMLInputElement>) => {
     const {
       currentTarget: { name, value },
@@ -62,9 +67,9 @@ export default function login() {
       .catch((error) => {
         const errorMessage = error.message;
         if (errorMessage.includes("user-not-found")) {
-          window.confirm("이메일을 찾을 수 없습니다.");
+          setErrorMsg("이메일을 찾을 수 없습니다.");
         } else if (errorMessage.includes("wrong-password"))
-          window.confirm("비밀번호가 맞지 않습니다.");
+          setErrorMsg("비밀번호가 맞지 않습니다.");
       });
   };
   return (
@@ -92,6 +97,7 @@ export default function login() {
             value={user.password}
           />
         </div>
+        <span>{errorMsg}</span>
         <input
           type="submit"
           value="login"
